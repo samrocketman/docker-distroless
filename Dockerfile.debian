@@ -1,0 +1,50 @@
+ARG debian=latest
+FROM debian:${debian} as debian
+
+SHELL ["/bin/bash", "-o", "pipefail", "-exc"]
+WORKDIR /
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN \
+  apt-get update; \
+  apt-get install -y curl build-essential
+
+# copy CA certificates
+RUN \
+  mkdir /base; \
+  tar -c usr/share/ca-certificates | tar -xC /base; \
+  tar -c etc/ssl/certs | tar -xC /base
+
+# copy tzinfo
+RUN \
+  mkdir -p /base/usr/share/zoneinfo; \
+  tar -c usr/share/zoneinfo | tar -xC /base; \
+  cp -a /etc/localtime /base/etc/localtime
+
+# create /sbin/nologin
+RUN \
+  mkdir -p base/sbin; \
+  echo 'int main() { return 1; }' > nologin.c; \
+  gcc -Os -no-pie -static -std=gnu99 -s -Wall -Werror -o base/sbin/nologin nologin.c
+
+# create custom user
+RUN \
+  mkdir -p base/home/nonroot; \
+  echo 'root:x:0:' > /base/etc/group; \
+  echo 'nonroot:x:65532:' >> /base/etc/group; \
+  echo 'root:x:0:0:root:/root:/sbin/nologin' > /base/etc/passwd; \
+  echo 'nonroot:x:65532:65532:nonroot:/home/nonroot:/sbin/nologin' >> /base/etc/passwd;
+
+# install latest dumb-init
+RUN \
+  version="$(curl -sSI https://github.com/Yelp/dumb-init/releases/latest | awk -F/ '$1 ~ /^location:/ { gsub("^v|\r$", "", $NF); print $NF }')"; \
+  curl -sSfLo /base/sbin/dumb-init \
+    "https://github.com/Yelp/dumb-init/releases/download/v${version}/dumb-init_${version}_$(arch)"; \
+  chmod 755 /base/sbin/dumb-init
+
+FROM scratch
+COPY --from=debian /base/ /
+ENTRYPOINT ["/bin/dumb-init", "--"]
+USER nonroot
+ENV HOME=/home/nonroot USER=nonroot
+WORKDIR /home/nonroot
