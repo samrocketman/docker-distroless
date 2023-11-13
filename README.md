@@ -23,11 +23,16 @@ Build a minimal distroless version of `amazonlinux:2023` with
 
     docker build -t distroless-al23 -f Dockerfile.amazonlinux2023 .
 
-### Java 21 distroless
+### Java distroless
 
 Also based on Amazon Linux 2023.
 
-    docker build -t distroless-al23-java21 -f Dockerfile.amazonlinux2023-java21 .
+    docker build -t distroless-al23-java21 -f Dockerfile.amazonlinux2023-java .
+
+Or building alternate versions of Java.
+
+    docker build --build-arg java=11 -t distroless-al23-java11 -f Dockerfile.amazonlinux2023-java .
+    docker build --build-arg java=17 -t distroless-al23-java17 -f Dockerfile.amazonlinux2023-java .
 
 [blog]: https://sam.gleske.net/blog/engineering/2022/10/25/guide-to-production-docker-images.html
 [debian]: https://hub.docker.com/_/debian
