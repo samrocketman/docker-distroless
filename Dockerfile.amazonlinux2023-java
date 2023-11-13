@@ -49,6 +49,11 @@ RUN \
   find /"${java_path}" -type f -exec copy-bin.sh --prefix /base --ldd {} \; ; \
   ln -s /"${java_path}" base/usr/lib/jvm/java
 
+# create /tmp directories
+RUN \
+  mkdir -p base/tmp base/var/tmp; \
+  chmod 1777 base/tmp base/var/tmp
+
 FROM scratch
 COPY --from=al23 /base/ /
 ENTRYPOINT ["/sbin/dumb-init", "--"]

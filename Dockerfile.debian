@@ -42,6 +42,11 @@ RUN \
     "https://github.com/Yelp/dumb-init/releases/download/v${version}/dumb-init_${version}_$(arch)"; \
   chmod 755 /base/sbin/dumb-init
 
+# create /tmp directories
+RUN \
+  mkdir -p base/tmp base/var/tmp; \
+  chmod 1777 base/tmp base/var/tmp
+
 FROM scratch
 COPY --from=debian /base/ /
 ENTRYPOINT ["/sbin/dumb-init", "--"]
