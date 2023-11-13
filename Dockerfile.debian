@@ -44,7 +44,7 @@ RUN \
 
 FROM scratch
 COPY --from=debian /base/ /
-ENTRYPOINT ["/bin/dumb-init", "--"]
+ENTRYPOINT ["/sbin/dumb-init", "--"]
 USER nonroot
 ENV HOME=/home/nonroot USER=nonroot
 WORKDIR /home/nonroot
