@@ -1,0 +1,54 @@
+FROM amazonlinux:2023 as al23
+
+SHELL ["/bin/bash", "-o", "pipefail", "-exc"]
+WORKDIR /
+
+RUN \
+  dnf makecache; \
+  dnf install -y util-linux findutils tar java-21-amazon-corretto.x86_64; \
+  curl -sSfLo /usr/local/bin/copy-bin.sh \
+    https://raw.githubusercontent.com/samrocketman/home/main/bin/copy-bin.sh; \
+  chmod 755 /usr/local/bin/copy-bin.sh
+
+# copy CA certificates
+RUN \
+  mkdir /base; \
+  tar -c etc/ssl | tar -xC /base; \
+  tar -c etc/pki | tar -xC /base
+
+# copy tzinfo
+RUN \
+  tar -c usr/share/zoneinfo | tar -xC /base; \
+  ln -s /usr/share/zoneinfo/Etc/UTC base/etc/localtime
+
+# create /sbin/nologin provided by util-linux
+RUN \
+  copy-bin.sh --prefix /base --ldd /sbin/nologin
+
+# create custom user
+RUN \
+  mkdir -p base/home/nonroot; \
+  echo 'root:x:0:' > /base/etc/group; \
+  echo 'nonroot:x:65532:' >> /base/etc/group; \
+  echo 'root:x:0:0:root:/root:/sbin/nologin' > /base/etc/passwd; \
+  echo 'nonroot:x:65532:65532:nonroot:/home/nonroot:/sbin/nologin' >> /base/etc/passwd;
+
+# install latest dumb-init
+RUN \
+  version="$(curl -sSI https://github.com/Yelp/dumb-init/releases/latest | awk -F/ '$1 ~ /^location:/ { gsub("^v|\r$", "", $NF); print $NF }')"; \
+  curl -sSfLo /base/sbin/dumb-init \
+    "https://github.com/Yelp/dumb-init/releases/download/v${version}/dumb-init_${version}_$(arch)"; \
+  chmod 755 /base/sbin/dumb-init
+
+# copy Java 21
+RUN \
+  tar -c usr/lib/jvm/java-21-amazon-corretto.x86_64 | tar -xC /base; \
+  find /usr/lib/jvm/java-21-amazon-corretto.x86_64 -type f -exec copy-bin.sh --prefix /base --ldd {} \;
+
+FROM scratch
+COPY --from=al23 /base/ /
+ENTRYPOINT ["/bin/dumb-init", "--"]
+USER nonroot
+ENV HOME=/home/nonroot USER=nonroot
+WORKDIR /home/nonroot
+ENV JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto.x86_64 PATH=/usr/lib/jvm/java-21-amazon-corretto.x86_64/bin

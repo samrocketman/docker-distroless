@@ -16,5 +16,18 @@ Build a specific version of Debian.
 
     docker build --build-arg debian=11 -t distroless-debian -f Dockerfile.debian .
 
+# Amazon Linux 2023
+
+Build a minimal distroless version of `amazonlinux:2023` with
+[`Dockerfile.amazonlinux2023`](Dockerfile.amazonlinux2023).
+
+    docker build -t distroless-al23 -f Dockerfile.amazonlinux2023 .
+
+### Java 21 distroless
+
+Also based on Amazon Linux 2023.
+
+    docker build -t distroless-al23-java21 -f Dockerfile.amazonlinux2023-java21 .
+
 [blog]: https://sam.gleske.net/blog/engineering/2022/10/25/guide-to-production-docker-images.html
 [debian]: https://hub.docker.com/_/debian
