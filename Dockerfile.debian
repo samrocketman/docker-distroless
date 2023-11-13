@@ -22,9 +22,9 @@ RUN \
   cp -a /etc/localtime /base/etc/localtime
 
 # create /sbin/nologin
+COPY nologin.c /
 RUN \
   mkdir -p base/sbin; \
-  echo 'int main() { return 1; }' > nologin.c; \
   gcc -Os -no-pie -static -std=gnu99 -s -Wall -Werror -o base/sbin/nologin nologin.c
 
 # create custom user
