@@ -7,7 +7,7 @@ WORKDIR /
 
 RUN \
   dnf makecache; \
-  dnf install -y util-linux findutils tar java-${java}-amazon-corretto; \
+  dnf install -y util-linux findutils tar java-${java}-amazon-corretto-devel; \
   curl -sSfLo /usr/local/bin/copy-bin.sh \
     https://raw.githubusercontent.com/samrocketman/home/main/bin/copy-bin.sh; \
   chmod 755 /usr/local/bin/copy-bin.sh
@@ -29,11 +29,13 @@ RUN \
 
 # create custom user
 RUN \
-  mkdir -p base/home/nonroot; \
+  mkdir -p base/home/nonroot base/root; \
   echo 'root:x:0:' > /base/etc/group; \
   echo 'nonroot:x:65532:' >> /base/etc/group; \
   echo 'root:x:0:0:root:/root:/sbin/nologin' > /base/etc/passwd; \
-  echo 'nonroot:x:65532:65532:nonroot:/home/nonroot:/sbin/nologin' >> /base/etc/passwd;
+  echo 'nonroot:x:65532:65532:nonroot:/home/nonroot:/sbin/nologin' >> /base/etc/passwd; \
+  chown 65532:65532 base/home/nonroot; \
+  chmod 750 base/home/nonroot base/root
 
 # install latest dumb-init
 RUN \
@@ -48,6 +50,14 @@ RUN \
   tar -c "${java_path}" | tar -xC /base; \
   find /"${java_path}" -type f -exec copy-bin.sh --prefix /base --ldd {} \; ; \
   ln -s /"${java_path}" base/usr/lib/jvm/java
+
+# copy fonts for Java fontconfig
+RUN \
+  tar -c usr/share/fonts | tar -xC /base; \
+  tar -c etc/fonts | tar -xC /base; \
+  tar -c usr/lib/fontconfig/cache | tar -xC /base; \
+  tar -c usr/share/xml/fontconfig | tar -xC /base; \
+  tar -c usr/share/fontconfig | tar -xC /base
 
 # create /tmp directories
 RUN \
