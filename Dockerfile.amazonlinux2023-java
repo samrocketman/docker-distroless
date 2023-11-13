@@ -7,7 +7,7 @@ WORKDIR /
 
 RUN \
   dnf makecache; \
-  dnf install -y util-linux findutils tar java-${java}-amazon-corretto-devel; \
+  dnf install -y util-linux findutils tar java-${java}-amazon-corretto-headless; \
   curl -sSfLo /usr/local/bin/copy-bin.sh \
     https://raw.githubusercontent.com/samrocketman/home/main/bin/copy-bin.sh; \
   chmod 755 /usr/local/bin/copy-bin.sh
@@ -51,13 +51,14 @@ RUN \
   find /"${java_path}" -type f -exec copy-bin.sh --prefix /base --ldd {} \; ; \
   ln -s /"${java_path}" base/usr/lib/jvm/java
 
-# copy fonts for Java fontconfig
+# copy fonts and binaries for listing fonts for Java fontconfig
 RUN \
   tar -c usr/share/fonts | tar -xC /base; \
   tar -c etc/fonts | tar -xC /base; \
   tar -c usr/lib/fontconfig/cache | tar -xC /base; \
   tar -c usr/share/xml/fontconfig | tar -xC /base; \
-  tar -c usr/share/fontconfig | tar -xC /base
+  tar -c usr/share/fontconfig | tar -xC /base \
+  rpm -q --filesbypkg fontconfig | grep -o /usr/bin/'.*' | xargs -n1 -I{} -- copy-bin.sh --prefix /base --ldd {}
 
 # create /tmp directories
 RUN \
